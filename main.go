@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"math/rand"
-	"sort"
 	"time"
 )
 
@@ -30,31 +29,30 @@ func main() {
 	WoC := generateComp()
 	fmt.Printf("Workers(CR * Weight(w1)) 				= %.2f\n", WoC)
 	fmt.Println("---------------------------------- Competence factor ---------------------------------------")
-	genDis := generateDistance()
-	WoD := distanceFactor(genDis)
-	var distSelect []float64
-	for k, v := range WoD {
-		fmt.Printf("%v			= %.2f\n", k, v)
-		if k == "Area[10]" { //default selecting nearest distance
-			distSelect = make([]float64, len(v))
-			for i, r := range v {
-				distSelect[i] = r
-			}
-		}
-	}
-	fmt.Println("---------------------------Distance factor-----------------------------------------")
 	WoT := generateWaitingTime()
-	fmt.Printf("WTF(wtf * Weight(w3)) 				= %.2f\n", WoT)
-	fmt.Println("---------------------------Waiting time factor--------------------------------------")
-	fmt.Printf("DIST 				= %.2f\n", distSelect)
-	maxCF := getMax(WoC)
-	maxDF := getMax(distSelect)
-	maxWF := getMax(WoT)
-	fmt.Printf("maxCF 				= %.2f\n", maxCF)
-	fmt.Printf("maxDF 				= %.2f\n", maxDF)
-	fmt.Printf("maxWF 				= %.2f\n", maxWF)
-	fmt.Printf("Result 				= %.2f\n", maxCF+maxDF+maxWF)
+	fmt.Printf("WTF(WR * Weight(w3)) 				= %.2f\n", WoT)
+	fmt.Println("---------------------------------Waiting time factor-------------------------------------------")
+	genDis := generateDistance()
+	WoD := distFactorByCluster(genDis)
+	fmt.Println("------------------------------------ Distance factor ------------------------------------------")
+	workersByClusterArea(WoC, WoT, WoD)
+	fmt.Println("-----------------------------Workers by clustered area------------------------------------")
+}
 
+func workersByClusterArea(WoC, WoT []float64, WoD map[string][]float64) {
+	//distSelect := make([]float64, 10)
+	for k, dst := range WoD {
+		fmt.Printf("\nCluster<-`%v`->total(%v)\n\n", k, len(dst))
+		fmt.Printf("WOD			= %.2f\n", dst[0:len(dst)])
+		// fmt.Printf("WoC			= %.2f\n", WoC[0:10])
+		// fmt.Printf("WoT			= %.2f\n", WoT[0:10])
+		// for i, d := range dst {
+		// 	//if i < 10 {
+		// 	distSelect[i] = d + WoC[i] + WoT[i]
+		// 	//}
+		// }
+		//fmt.Printf("Workers(probable)	= %.2f\n", distSelect)
+	}
 }
 
 func getMax(gm []float64) float64 {
@@ -69,132 +67,6 @@ func getMax(gm []float64) float64 {
 		// }
 	}
 	return max
-}
-
-func generateWaitingTime() []float64 {
-	dr := DefRange{wtMin, wtMax}
-	//randSrc ensures that the number that is generated is random
-	randSrc := rand.New(rand.NewSource(now()))
-	WTF := dr.ConsRandom(randSrc, wtMax)
-	pr := make([]float64, wtMax)
-	fmt.Printf("Waiting time Factor 				= %v\n", WTF)
-	for i, f := range WTF {
-		p := float64(float64(f) / 10.0) //10 is the maximum number of jobs
-		f := 1 - p
-		pr[i] = f * w3
-	}
-	return pr
-}
-
-func distanceFactor(gd []int) map[string][]float64 {
-	dfcMap := make(map[string][]float64)
-	j := 0
-	for i := 10; i <= dMax; i += 10 {
-		//area should be clustered by value where distance might increase by 10
-		mk := getMaxValueKey(gd, j+1, i)
-		//fmt.Printf("MK -> %d | j== %v\n", mk, j)
-		acd := gd[j:mk]
-		sumACD := sumOfSlice(acd)
-		//fmt.Printf("%v   == %v\n\n", acd, sumACD)
-		dfc := make([]float64, len(acd))
-		for k, v := range acd {
-			//	fmt.Printf("V = %v\n", v)
-			f := float64(float64(v) / sumACD)
-			//	fmt.Printf("F = %v\n", f)
-			mf := (1 - f)
-			//fmt.Printf("MF = %v | key = %v\n", mf, k)
-			dfc[k] = mf * w2
-			dfcMap[fmt.Sprintf("Area[%d]", i)] = dfc
-		}
-		j = i
-	}
-	return dfcMap
-}
-func getMaxValueKey(ds []int, minV, maxV int) int {
-	maxKey := 0
-	for i, v := range ds {
-		if v >= minV && v <= maxV {
-			maxKey = i
-		}
-	}
-	return maxKey
-}
-
-func sumOfSlice(as []int) float64 {
-	sum := 0
-	for _, v := range as {
-		sum += v
-	}
-	return float64(sum)
-}
-
-//generateDistance() should give the clustered area output
-func generateDistance() []int {
-	r := DefRange{dMin, dMax}
-	randSrc := rand.New(rand.NewSource(now()))
-	DF := r.ConsRandom(randSrc, dMax) //maximum distance is used
-	dr := make([]int, dMax)
-	fmt.Printf("Random Distance Factor(df) 			= %v\n", DF)
-	//Sorting the array from asc to desc
-	sort.Ints(DF)
-	fmt.Printf("Random Distance Factor(sorted) 			= %v\n", DF)
-	for i, d := range DF {
-		switch {
-		case d <= 10:
-			dr[i] = d
-		case d > 10 && d <= 20:
-			dr[i] = d
-		case d > 20 && d <= 30:
-			dr[i] = d
-		case d > 30 && d <= 40:
-			dr[i] = d
-		case d > 40 && d <= 50:
-			dr[i] = d
-		default:
-		}
-	}
-	return dr
-}
-
-//generateComp() should provide the random number between 1-5
-func generateComp() []float64 {
-	dr := DefRange{cMin, cMax}
-	//randSrc ensures that the number that is generated is random
-	randSrc := rand.New(rand.NewSource(now()))
-	CF := dr.ConsRandom(randSrc, TotalProfileRead)
-	pr := make([]float64, TotalProfileRead)
-	fmt.Printf("Worker's profile(Random)				= %v\n", CF)
-	for i, f := range CF {
-		p := float64(float64(f) / 5.0)
-		pr[i] = p
-	}
-	fmt.Printf("Competence Ratio(gen(single worker)/5.0)		= %.2f\n", pr)
-	pt := totalProfileMatrix(pr)
-	fmt.Printf("Total competence ratio(Sum)				= %.2f\n", pt)
-	//pcm => single person choose by matrix and weight factor
-	pcm := make([]float64, TotalProfileRead)
-	for i, m := range pr {
-		N := float64(len(pr))
-		profileRatio := float64(1 / N)
-		prMatrix := float64(profileRatio * m)
-		spp := float64(prMatrix / pt)
-		pcm[i] = spp * w1
-	}
-	return pcm
-}
-
-func totalProfileMatrix(tpm []float64) float64 {
-	pt := 0.0
-	//pt is the summation of (i)th person's matrix
-	//pt += [1/total * person's matrix %]
-	for _, m := range tpm {
-		N := float64(len(tpm))
-		NR := float64(1 / N)
-		spt := float64(NR * m)
-		pt += spt
-	}
-
-	return pt
 }
 
 //ConsRandom provide next consecutive random value within the interval including min and max
