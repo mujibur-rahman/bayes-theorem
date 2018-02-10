@@ -28,8 +28,8 @@ type DefRange struct {
 
 func main() {
 	WoC := generateComp()
-	fmt.Printf("PF(Cf * Weight(w1)) 				= %.2f\n", WoC)
-	fmt.Println("---------------------------Competence factor---------------------------------------")
+	fmt.Printf("Workers(CR * Weight(w1)) 				= %.2f\n", WoC)
+	fmt.Println("---------------------------------- Competence factor ---------------------------------------")
 	genDis := generateDistance()
 	WoD := distanceFactor(genDis)
 	var distSelect []float64
@@ -163,12 +163,38 @@ func generateComp() []float64 {
 	randSrc := rand.New(rand.NewSource(now()))
 	CF := dr.ConsRandom(randSrc, TotalProfileRead)
 	pr := make([]float64, TotalProfileRead)
-	fmt.Printf("Competence Factor 				= %v\n", CF)
+	fmt.Printf("Worker's profile(Random)				= %v\n", CF)
 	for i, f := range CF {
 		p := float64(float64(f) / 5.0)
-		pr[i] = p * w1
+		pr[i] = p
 	}
-	return pr
+	fmt.Printf("Competence Ratio(gen(single worker)/5.0)		= %.2f\n", pr)
+	pt := totalProfileMatrix(pr)
+	fmt.Printf("Total competence ratio(Sum)				= %.2f\n", pt)
+	//pcm => single person choose by matrix and weight factor
+	pcm := make([]float64, TotalProfileRead)
+	for i, m := range pr {
+		N := float64(len(pr))
+		profileRatio := float64(1 / N)
+		prMatrix := float64(profileRatio * m)
+		spp := float64(prMatrix / pt)
+		pcm[i] = spp * w1
+	}
+	return pcm
+}
+
+func totalProfileMatrix(tpm []float64) float64 {
+	pt := 0.0
+	//pt is the summation of (i)th person's matrix
+	//pt += [1/total * person's matrix %]
+	for _, m := range tpm {
+		N := float64(len(tpm))
+		NR := float64(1 / N)
+		spt := float64(NR * m)
+		pt += spt
+	}
+
+	return pt
 }
 
 //ConsRandom provide next consecutive random value within the interval including min and max
