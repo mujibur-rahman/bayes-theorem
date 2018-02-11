@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math/rand"
 )
 
@@ -16,36 +15,19 @@ func generateComp() []float64 {
 	randSrc := rand.New(rand.NewSource(now()))
 	CF := dr.ConsRandom(randSrc, TotalProfileRead)
 	pr := make([]float64, TotalProfileRead)
-	fmt.Printf("Worker's profile(Random)				= %v\n", CF)
+	//fmt.Printf("Worker's profile(Random)				= %v\n", CF)
+	tcm := totalValueMatrix(CF)
 	for i, f := range CF {
-		p := float64(float64(f) / 5.0)
-		pr[i] = p
+		p := float64(float64(f) / float64(tcm)) //5 replaced by all factors
+		pr[i] = p * w1
 	}
-	fmt.Printf("Competence Ratio(gen(single worker)/5.0)		= %.2f\n", pr)
-	pt := totalProfileMatrix(pr)
-	fmt.Printf("Total competence ratio(Sum)				= %.2f\n", pt)
-	//pcm => single person choose by matrix and weight factor
-	pcm := make([]float64, TotalProfileRead)
-	for i, m := range pr {
-		N := float64(len(pr))
-		profileRatio := float64(1 / N)
-		prMatrix := float64(profileRatio * m)
-		spp := float64(prMatrix / pt)
-		pcm[i] = spp * w1
-	}
-	return pcm
+	return pr
 }
 
-func totalProfileMatrix(tpm []float64) float64 {
-	pt := 0.0
-	//pt is the summation of (i)th person's matrix
-	//pt += [1/total * person's matrix %]
-	N := float64(len(tpm))
-	NR := float64(1 / N)
+func totalValueMatrix(tpm []int) int {
+	var pt int
 	for _, m := range tpm {
-		spt := float64(NR * m)
-		pt += spt
+		pt += m
 	}
-
 	return pt
 }
